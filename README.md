@@ -1,97 +1,73 @@
-# EmailChecker
+# emailchecker
 
-[![Hex.pm Version](https://img.shields.io/hexpm/v/email_checker.svg?style=flat)](https://hex.pm/packages/email_checker)
-[![.github/workflows/ci.yml](https://github.com/maennchen/email_checker/actions/workflows/ci.yml/badge.svg)](https://github.com/maennchen/email_checker/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/maennchen/email_checker/badge.svg?branch=main)](https://coveralls.io/github/maennchen/email_checker?branch=main)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/maennchen/email_checker/main/LICENSE)
-[![Last Updated](https://img.shields.io/github/last-commit/maennchen/email_checker.svg)](https://github.com/maennchen/email_checker/commits/main)
+A small, zero-dependency Go package that validates email addresses through
+a configurable pipeline of checks. Ported from the Elixir
+[`email_checker`](https://github.com/maennchen/email_checker) library.
 
-Simple library checking the validity of an email. Checks are performed in the
-following order:
+Checks are run in order and short-circuit on the first failure:
 
-* REGEX: validate the emails has a good looking format
-* MX: validate the domain sever contains MX records
-* SMTP: validate the SMTP behind the MX records knows this email address (no
-email sent)
-   * :warning: That's rare but, some SMTP define a catchall email address. Meaning
-all emails using this domain seems valid even if they are not.
-   * :warning: Most email providers nowadays don't support this method. You should only use it if you know what you're doing.
+- **Format** — the address matches a permissive RFC 5322 regex.
+- **MX** — the domain publishes at least one MX record.
+- **SMTP** *(opt-in)* — the lowest-priority MX accepts the address in
+  response to `RCPT TO`. No mail is sent.
 
-### Installation
+> Most providers no longer honour the SMTP probe and many treat it as
+> abuse. Some accept every address (catch-all). Use it only when you know
+> the target supports it.
 
-```elixir
-# mix.exs
-def deps do
-  [
-    # other dependencies...
-    {:email_checker, "~> 0.2.4"}
-    # other dependencies...
-  ]
-end
+## Installation
+
+```sh
+go get github.com/pakat-marketing/email_checker
+```
+
+The package has no module dependencies — only the Go standard library.
+
+## Usage
+
+```go
+import "github.com/pakat-marketing/email_checker"
+
+// Default pipeline: Format + MX.
+ok := emailchecker.Valid("kevin@disneur.me")
+
+// Custom pipeline.
+ok = emailchecker.Validate("kevin@disneur.me",
+    emailchecker.Format,
+    emailchecker.MX,
+    emailchecker.SMTP,
+)
+
+// Format-only (no network).
+ok = emailchecker.Format("test@test.ch")
 ```
 
 ### Configuration
 
-```elixir
-# config/config.exs -- default
-config :email_checker,
-  default_dns: :system,
-  also_dns: [],
-  validations: [EmailChecker.Check.Format, EmailChecker.Check.MX],
-  smtp_retries: 2,
-  timeout_milliseconds: :infinity
+For non-default timeouts or retry counts, build a `Checker` and use its
+methods inside `Validate`:
+
+```go
+c := emailchecker.NewChecker(emailchecker.Config{
+    Timeout:     6 * time.Second,
+    SMTPRetries: 1,
+    HelloName:   "client.invalid",
+    MailFrom:    "probe@client.invalid",
+})
+
+ok := emailchecker.Validate("kevin@disneur.me", c.MX, c.SMTP)
 ```
 
-In the test environment, we need to manually load DNS records to validate if an
-MX exists or not. When we load the library Erlang doesn't have its DNS record
-list yet. So to avoid any problem, we define a default DNS. By default the value
-for the test environment is : `{8, 8, 8, 8}`, which is Google's primary public
-DNS server. If you find that you have odd failures in name resolution, you may
-have to specify a default DNS server.
+| Field         | Default          | Meaning                                                              |
+| ------------- | ---------------- | -------------------------------------------------------------------- |
+| `Timeout`     | none             | Bound on each network operation (DNS, SMTP dial, SMTP read/write).   |
+| `SMTPRetries` | `2`              | Retries on network errors during the SMTP probe.                     |
+| `HelloName`   | recipient domain | Hostname announced in `HELO`.                                        |
+| `MailFrom`    | `fake@email.com` | Sender used in `MAIL FROM`.                                          |
 
-In the case you need to load more DNS servers manually after the default one, you
-can set a list of more DNS server IPs in the `also_dns` setting.
+When `Timeout > 0`, the per-attempt SMTP timeout is `Timeout / SMTPRetries`,
+matching the behaviour of the Elixir library.
 
-Please note that the IP address is represented as a tuple separated by commas.
+## License
 
-The default validations setting should be suitable for most cases. If you use
-fake but valid-looking email addresses in your own tests, you may need to set
-the validations to just `[Format]`, and MX and SMTP testing will then not be
-used in that configuration.
-
-The SMTP validation strategy will attempt 2 retries, by default.
-
-The MX and SMTP validation strategies, each in their own way, use the same
-default timeout for net connections as the underlying Erlang library calls. It
-is important to note that this value is `:infinity`, and the call will take as
-long as the call takes. You likely want to set to a sensible timeout in
-milliseconds. Please note that:
-
- * For the MX validation, this is the timeout of the call to the DNS server for
-   MX records.
- * For the SMTP validation, the timeout is divided by the number of retries.
-
-```elixir
-# config/config.exs -- example personalized configuration
-config :email_checker,
-  default_dns: {8, 8, 8, 8},
-  smtp_retries: 1,
-  timeout_milliseconds: 6000
-```
-
-### Usage
-
-```elixir
-EmailChecker.valid?("kevin@disneur.me")
-#=> true
-EmailChecker.valid?("non-existing@disneur.me")
-#=> false
-```
-
-### CHANGELOG
-
-[CHANGELOG](https://github.com/maennchen/email_checker/blob/main/CHANGELOG.md)
-
-### LICENSE
-
-[MIT](https://github.com/maennchen/email_checker/blob/main/LICENSE)
+[MIT](./LICENSE)

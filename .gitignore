@@ -1,6 +1,12 @@
-/_build
-/deps
-erl_crash.dump
-*.ez
-mix.lock
-/doc
+# Test binaries / coverage
+*.test
+*.out
+/coverage.out
+
+# Go workspace files
+go.work
+go.work.sum
+
+# IDE
+.idea/
+.vscode/
