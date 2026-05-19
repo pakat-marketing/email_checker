@@ -1,3 +1,5 @@
+name: CI
+
 on:
   pull_request:
     branches:
@@ -5,217 +7,22 @@ on:
   push:
     branches:
       - 'main'
-    tags:
-      - 'v*'
 
 jobs:
-
-  detectToolVersions:
-    name: "Detect Tool Versions"
-
-    runs-on: ubuntu-latest
-
-    outputs:
-      elixir: "${{ steps.versions.outputs.elixir }}"
-      erlang: "${{ steps.versions.outputs.erlang }}"
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Detect Versions
-        id: versions
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const fs = require('node:fs');
-            const versions = fs.readFileSync('.tool-versions', 'utf8');
-
-            const regex = /^(# )?(?<toolName>([\w_-]+)) +(?<version>[^\s#]+)(?: +[^\s#]+)* *(?: #(?<comment>.*))?$/gm;
-
-            [...versions.matchAll(regex)]
-              .map(match => match.groups)
-              .forEach(({toolName, version}) => {
-                core.setOutput(toolName, version);
-                console.log(`${toolName}: ${version}`);
-              });
-
-  format:
-    name: Check Formatting
-    
-    runs-on: ubuntu-latest
-
-    env:
-      MIX_ENV: dev
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1.24.0
-        id: setupBEAM
-        with:
-          version-file: ".tool-versions"
-          version-type: strict
-      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |-
-            deps
-            _build
-          key: "${{ format('{0}-{1}-{2}-{3}-{4}', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version, hashFiles('mix.exs')) }}"
-          restore-keys: "${{ format('{0}-{1}-{2}-{3}-', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version) }}"
-      - run: mix deps.get
-      - run: mix deps.compile
-      - run: mix format --check-formatted
-
   test:
-    name: Run Tests & Submit Coverage (${{ matrix.name }})
-
-    runs-on: "${{ matrix.os }}"
-
-    needs: ["detectToolVersions"]
-
-    env:
-      MIX_ENV: test
-
+    name: Build, Vet & Test (Go ${{ matrix.go }})
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Lowest Supported
-          - os: ubuntu-22.04
-            elixir: "1.12.3"
-            erlang: "24.2"
-            name: "lowest"
-            unstable: false
-          # Latest Supported
-          - os: ubuntu-latest
-            elixir: "${{ needs.detectToolVersions.outputs.elixir }}"
-            erlang: "${{ needs.detectToolVersions.outputs.erlang }}"
-            name: "latest"
-            unstable: false
-          # Test Main
-          - os: ubuntu-latest
-            elixir: "main"
-            erlang: "${{ needs.detectToolVersions.outputs.erlang }}"
-            name: "main"
-            unstable: true
+        go: ['1.21', '1.22', 'stable']
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1.24.0
-        id: setupBEAM
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          otp-version: "${{ matrix.erlang }}"
-          elixir-version: "${{ matrix.elixir }}"
-          version-type: strict
-      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |-
-            deps
-            _build
-          key: "${{ format('{0}-{1}-{2}-{3}-{4}', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version, hashFiles('mix.exs')) }}"
-          restore-keys: "${{ format('{0}-{1}-{2}-{3}-', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version) }}"
-      - run: mix deps.get
-      - run: mix deps.compile
-      - run: mix compile --warning-as-errors
-        continue-on-error: ${{ matrix.unstable }}
-      - run: mix coveralls.github || mix test
-        continue-on-error: ${{ matrix.unstable }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  credo:
-    name: Check Credo
-
-    runs-on: ubuntu-latest
-
-    env:
-      MIX_ENV: dev
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1.24.0
-        id: setupBEAM
-        with:
-          version-file: ".tool-versions"
-          version-type: strict
-      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |-
-            deps
-            _build
-          key: "${{ format('{0}-{1}-{2}-{3}-{4}', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version, hashFiles('mix.exs')) }}"
-          restore-keys: "${{ format('{0}-{1}-{2}-{3}-', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version) }}"
-      - run: mix deps.get
-      - run: mix deps.compile
-      - run: mix compile --warning-as-errors
-      - run: mix credo --strict
-
-  dialyzer:
-    name: "Check Dialyzer"
-
-    runs-on: ubuntu-latest
-
-    env:
-      MIX_ENV: dev
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1.24.0
-        id: setupBEAM
-        with:
-          version-file: ".tool-versions"
-          version-type: strict
-      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |-
-            deps
-            _build
-          key: "${{ format('{0}-{1}-{2}-{3}-{4}', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version, hashFiles('mix.exs')) }}"
-          restore-keys: "${{ format('{0}-{1}-{2}-{3}-', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version) }}"
-      - run: mix deps.get
-      - run: mix deps.compile
-      - run: mix compile --warning-as-errors
-      - run: mix dialyzer
-
-  docs:
-    name: "Generate Docs"
-
-    runs-on: ubuntu-latest
-
-    env:
-      MIX_ENV: dev
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1.24.0
-        id: setupBEAM
-        with:
-          version-file: ".tool-versions"
-          version-type: strict
-      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |-
-            deps
-            _build
-          key: "${{ format('{0}-{1}-{2}-{3}-{4}', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version, hashFiles('mix.exs')) }}"
-          restore-keys: "${{ format('{0}-{1}-{2}-{3}-', env.MIX_ENV, runner.os, steps.setupBEAM.outputs.otp-version, steps.setupBEAM.outputs.elixir-version) }}"
-      - run: mix deps.get
-      - run: mix deps.compile
-      - run: mix compile --warning-as-errors
-      - run: mix docs
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: docs
-          path: doc
-
-  sobelow:
-    runs-on: ubuntu-latest
-    name: Sobelow Job
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - id: run-action
-        uses: sobelow/action@4c2cc216597acef2c5f8b4b2e49ad591be36ce36 # v1.2.0
-        with:
-          flags: '--skip'
-      - uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
-        with:
-          sarif_file: results.sarif
+          go-version: ${{ matrix.go }}
+      - run: go build ./...
+      - run: go vet ./...
+      - run: gofmt -l . | tee /tmp/fmt && test ! -s /tmp/fmt
+      - run: go test -race -count=1 ./...
