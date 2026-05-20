@@ -23,8 +23,8 @@ func SMTP(email string) bool {
 // SMTP runs the SMTP RCPT TO probe against email, retrying up to
 // SMTPRetries times on network errors.
 func (c *Checker) SMTP(email string) bool {
-	host := c.lookupMX(email)
-	if host == "" {
+	host, err := c.lookupMX(email)
+	if err != nil || host == "" {
 		return false
 	}
 	return c.smtpProbe(email, host)

@@ -40,6 +40,14 @@ ok = emailchecker.Validate("kevin@disneur.me",
 
 // Format-only (no network).
 ok = emailchecker.Format("test@test.ch")
+
+// Distinguish "no MX" from "DNS error". Useful for pre-filters that
+// shouldn't drop addresses just because the local resolver hiccuped:
+//
+//   (true,  nil)  → domain has MX records
+//   (false, nil)  → domain has zero MX records (safe to filter)
+//   (false, err)  → lookup failed; treat as unknown, not as no-MX
+hasMX, err := emailchecker.CheckMX("kevin@disneur.me")
 ```
 
 ### Configuration

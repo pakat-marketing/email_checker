@@ -1,3 +1,9 @@
+## Unreleased
+
+* Add `CheckMX(email) (bool, error)` and `(*Checker).CheckMX` so callers
+  can distinguish "domain has no MX records" from "DNS lookup failed".
+  The original `MX(email) bool` is unchanged.
+
 ## v0.1.4 (2021-01-07)
 
 * Fix Compiler Warning (#15)
