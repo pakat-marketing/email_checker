@@ -1,3 +1,10 @@
+## v0.2.0-beta.2 (2026-06-08, beta)
+
+* Fix `Correct` silently rewriting valid addresses on providers modeled via
+  the second-level/top-level lists (e.g. `mail.com` → `gmail.com`). `Correct`
+  now skips any address that is already a valid known second-level +
+  top-level combination, mirroring `Suggest`'s already-valid guard.
+
 ## v0.2.0-beta.1 (2026-06-08, beta)
 
 First beta of the Go port's new features. APIs may still change before the

@@ -59,6 +59,17 @@ func (s *Suggester) Correct(email string) (Suggestion, bool) {
 	}
 
 	domain := strings.ToLower(parts.domain)
+
+	// Never rewrite an address that is already a valid known second-level +
+	// top-level combination (e.g. mail.com, live.com, gmx.com), even when a
+	// full domain happens to be distance 1 away (mail.com is 1 from
+	// gmail.com). Without this guard the silent path would corrupt valid
+	// addresses on providers that the lists model via their parts.
+	sld, tld := splitDomain(domain)
+	if contains(s.secondLevel, sld) && contains(s.topLevel, tld) {
+		return Suggestion{}, false
+	}
+
 	closest, dist, found := closestDomainWithin(domain, s.domains, s.distance, highConfidenceMaxDistance)
 	if !found || dist == 0 {
 		// No match, or already an exact known domain: nothing to fix.

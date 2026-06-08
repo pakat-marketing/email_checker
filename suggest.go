@@ -193,16 +193,7 @@ func splitEmail(email string) (emailParts, bool) {
 
 	domain := parts[len(parts)-1]
 	address := strings.Join(parts[:len(parts)-1], "@")
-
-	domainParts := strings.Split(domain, ".")
-	sld := ""
-	tld := ""
-	if len(domainParts) == 1 {
-		tld = domainParts[0]
-	} else {
-		sld = domainParts[0]
-		tld = strings.Join(domainParts[1:], ".")
-	}
+	sld, tld := splitDomain(domain)
 
 	return emailParts{
 		topLevelDomain:    tld,
@@ -210,6 +201,18 @@ func splitEmail(email string) (emailParts, bool) {
 		domain:            domain,
 		address:           address,
 	}, true
+}
+
+// splitDomain splits a domain into its second-level and top-level parts,
+// matching mailcheck.js: the first label is the second-level part and the
+// rest (joined by ".") is the top-level part. A single-label domain has an
+// empty second-level part.
+func splitDomain(domain string) (sld, tld string) {
+	domainParts := strings.Split(domain, ".")
+	if len(domainParts) == 1 {
+		return "", domainParts[0]
+	}
+	return domainParts[0], strings.Join(domainParts[1:], ".")
 }
 
 // findClosestDomain returns the entry in domains closest to domain, provided

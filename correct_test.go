@@ -25,6 +25,14 @@ func TestCorrect(t *testing.T) {
 		{"valid hotmail", "kevin@hotmail.com", false, ""},
 		{"valid yahoo", "kevin@yahoo.com", false, ""},
 		{"valid outlook", "kevin@outlook.com", false, ""},
+		// Valid providers modeled via second-level + top-level lists must
+		// never be silently rewritten, even if a full domain is distance 1
+		// away (mail.com is 1 from gmail.com).
+		{"valid mail.com", "kevin@mail.com", false, ""},
+		{"valid live.com", "kevin@live.com", false, ""},
+		{"valid gmx.com", "kevin@gmx.com", false, ""},
+		{"valid mail.co.uk", "kevin@mail.co.uk", false, ""},
+		{"valid uppercase mail.com", "kevin@MAIL.COM", false, ""},
 
 		// Low confidence: must NOT silently rewrite.
 		{"valid uncommon tld", "kevin@mycompany.io", false, ""},
