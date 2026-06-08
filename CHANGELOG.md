@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Add domain typo suggestion (`Suggest`, `NewSuggester`, `SuggestOptions`,
+  `Suggestion`), ported from mailcheck.js. Given `kevin@gmial.com` it
+  suggests `kevin@gmail.com`. Domain lists, thresholds, and the distance
+  function (default `sift4`) are configurable. No network I/O.
 * Add `CheckMX(email) (bool, error)` and `(*Checker).CheckMX` so callers
   can distinguish "domain has no MX records" from "DNS lookup failed".
   The original `MX(email) bool` is unchanged.

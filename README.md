@@ -50,6 +50,43 @@ ok = emailchecker.Format("test@test.ch")
 hasMX, err := emailchecker.CheckMX("kevin@disneur.me")
 ```
 
+### Did-you-mean suggestions
+
+`Suggest` corrects likely domain typos (a port of
+[mailcheck.js](https://github.com/pakat-marketing/mailcheck)). It does no
+network I/O — it matches the domain against a list of known good domains
+using a string-distance function.
+
+```go
+// Default domain lists.
+if s, ok := emailchecker.Suggest("kevin@gmial.com"); ok {
+    fmt.Println(s.Full)    // "kevin@gmail.com"
+    fmt.Println(s.Address) // "kevin"
+    fmt.Println(s.Domain)  // "gmail.com"
+}
+
+// ok is false when the address is unparseable, already good, or has no
+// close match:
+_, ok := emailchecker.Suggest("kevin@gmail.com") // ok == false (already good)
+
+// Custom domain lists / thresholds / distance function. Extend the
+// built-in lists rather than replacing them:
+s := emailchecker.NewSuggester(emailchecker.SuggestOptions{
+    Domains: append(emailchecker.DefaultDomains, "mycompany.com"),
+})
+suggestion, ok := s.Suggest("kevin@mycompny.com") // -> kevin@mycompany.com
+```
+
+| Field                  | Default                     | Meaning                                       |
+| ---------------------- | --------------------------- | --------------------------------------------- |
+| `Domains`              | `DefaultDomains`            | Full domains matched against the whole domain. |
+| `SecondLevelDomains`   | `DefaultSecondLevelDomains` | Known second-level parts (e.g. `gmail`).       |
+| `TopLevelDomains`      | `DefaultTopLevelDomains`    | Known top-level parts (e.g. `com`, `co.uk`).   |
+| `DomainThreshold`      | `2`                         | Max distance for a full-domain match.          |
+| `SecondLevelThreshold` | `2`                         | Max distance for a second-level match.         |
+| `TopLevelThreshold`    | `2`                         | Max distance for a top-level match.            |
+| `Distance`             | `sift4`                     | Pluggable `func(a, b string) int`.             |
+
 ### Configuration
 
 For non-default timeouts or retry counts, build a `Checker` and use its

@@ -116,9 +116,11 @@ var (
 
 ## Algorithm (ported from mailcheck.js)
 
-1. **splitEmail(email)** — split on the *last* `@`; trim and lowercase the
-   domain; keep the local part as-is. Return not-ok on empty input, missing
-   `@`, empty local part, or empty domain.
+1. **lowercase + splitEmail(email)** — the whole address is lowercased
+   first (matching mailcheck.js, so the returned `Address` is lowercased
+   too), then trimmed and split: the part after the last `@` is the domain,
+   everything before is the local part. Return not-ok on empty input,
+   missing `@`, empty local part, or empty domain.
 2. **already-good check** — split the domain into second-level and
    top-level parts. If the second-level part is in `SecondLevelDomains`
    *and* the top-level part is in `TopLevelDomains`, return no suggestion.
@@ -150,7 +152,11 @@ strings and missing `@`).
 Port mailcheck's Jasmine spec cases to Go table tests:
 - `test@gmial.com` → `test@gmail.com` (full domain)
 - `test@hotmail.cmo` → `test@hotmail.com` (top-level fix)
-- second-level-only typo (e.g. `test@yaho.com` → `test@yahoo.com`)
+- second-level-only typo (e.g. `test@hotmial.com` → `test@hotmail.com`).
+  Note: a second-level typo only routes through the component path when no
+  *full* domain is within `DomainThreshold`. e.g. `test@yaho.com` resolves
+  to `test@aol.com`, not `yahoo.com`, because `aol.com` scores within
+  threshold first — this matches mailcheck.js exactly.
 - already-valid domain → no suggestion
 - empty / no-`@` / no-domain input → ok=false
 - input whose only change would equal itself → ok=false
