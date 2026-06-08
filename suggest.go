@@ -216,15 +216,23 @@ func splitEmail(email string) (emailParts, bool) {
 // it is within threshold. An exact match short-circuits. Ties are resolved
 // by first-encountered, matching mailcheck.js iteration order.
 func findClosestDomain(domain string, domains []string, dist DistanceFunc, threshold int) (string, bool) {
+	closest, _, ok := closestDomainWithin(domain, domains, dist, threshold)
+	return closest, ok
+}
+
+// closestDomainWithin is findClosestDomain that also returns the matching
+// distance (0 for an exact match), so callers can apply a stricter policy
+// than the threshold alone.
+func closestDomainWithin(domain string, domains []string, dist DistanceFunc, threshold int) (string, int, bool) {
 	if domain == "" || len(domains) == 0 {
-		return "", false
+		return "", 0, false
 	}
 
 	minDist := -1
 	closest := ""
 	for _, d := range domains {
 		if domain == d {
-			return domain, true
+			return domain, 0, true
 		}
 		score := dist(domain, d)
 		if minDist < 0 || score < minDist {
@@ -234,9 +242,9 @@ func findClosestDomain(domain string, domains []string, dist DistanceFunc, thres
 	}
 
 	if closest != "" && minDist <= threshold {
-		return closest, true
+		return closest, minDist, true
 	}
-	return "", false
+	return "", 0, false
 }
 
 func contains(list []string, v string) bool {

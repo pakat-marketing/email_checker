@@ -87,6 +87,41 @@ suggestion, ok := s.Suggest("kevin@mycompny.com") // -> kevin@mycompany.com
 | `TopLevelThreshold`    | `2`                         | Max distance for a top-level match.            |
 | `Distance`             | `sift4`                     | Pluggable `func(a, b string) int`.             |
 
+### High-confidence auto-correction
+
+`Correct` is a stricter variant intended for **silently rewriting** an
+address (no user confirmation). It only returns a correction when the whole
+domain is a single-character (distance 1) typo of a known good domain — it
+never does the component-level TLD/SLD reconstruction that `Suggest` does,
+and the distance bound is fixed (not configurable), so it can't be loosened
+by accident.
+
+```go
+if c, ok := emailchecker.Correct("Kevin@gmial.com"); ok {
+    email = c.Full // "Kevin@gmail.com" — safe to write back
+}
+```
+
+Differences from `Suggest`:
+
+- **Preserves the local part exactly** (only the domain is lowercased for
+  matching), so `Kevin.O@GMIAL.COM` → `Kevin.O@gmail.com`.
+- Matches against `CorrectDomains` (= `DefaultDomains` + major providers
+  `yahoo.com`, `hotmail.com`, `outlook.com`, `live.com`, `proton.me`,
+  `protonmail.com`, …) so Yahoo/Hotmail/Outlook typos are covered.
+- Returns `ok=false` for valid addresses, distance ≥ 2, modern TLDs with no
+  close match (`mycompany.io`, `startup.ai`), and malformed input — in all
+  those cases, leave the address untouched.
+
+Extend the target list rather than replacing it:
+
+```go
+s := emailchecker.NewSuggester(emailchecker.SuggestOptions{
+    Domains: append(emailchecker.CorrectDomains, "mycompany.com"),
+})
+c, ok := s.Correct("kevin@mycompny.com") // -> kevin@mycompany.com
+```
+
 ### Configuration
 
 For non-default timeouts or retry counts, build a `Checker` and use its

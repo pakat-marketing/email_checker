@@ -4,6 +4,11 @@
   `Suggestion`), ported from mailcheck.js. Given `kevin@gmial.com` it
   suggests `kevin@gmail.com`. Domain lists, thresholds, and the distance
   function (default `sift4`) are configurable. No network I/O.
+* Add high-confidence `Correct` (and the `(*Suggester).Correct` method)
+  for silent auto-fix: corrects only whole-domain distance-1
+  typos of a known good domain, preserves the local-part casing, and never
+  does component-level reconstruction. Matches against `CorrectDomains`
+  (`DefaultDomains` + major providers like yahoo/hotmail/outlook/live).
 * Add `CheckMX(email) (bool, error)` and `(*Checker).CheckMX` so callers
   can distinguish "domain has no MX records" from "DNS lookup failed".
   The original `MX(email) bool` is unchanged.
