@@ -1,4 +1,7 @@
-## Unreleased
+## v0.2.0-beta.1 (2026-06-08, beta)
+
+First beta of the Go port's new features. APIs may still change before the
+stable `v0.2.0`; pin this exact version if you depend on it.
 
 * Add domain typo suggestion (`Suggest`, `NewSuggester`, `SuggestOptions`,
   `Suggestion`), ported from mailcheck.js. Given `kevin@gmial.com` it
