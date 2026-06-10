@@ -3,6 +3,10 @@
 * Add a `Confidence` field (`high`/`medium`/`low`) to `Suggestion`, so
   callers can tell a whole-domain off-by-one typo from a lower-confidence
   component-level reconstruction. `Correct` results are always `high`.
+* Add `IsDisposable`/`IsDisposableDomain` and `IsRoleBased` for offline
+  filtering of throwaway and role/distribution addresses. The disposable list
+  is embedded (`disposable_domains.txt`) and `DefaultRolePrefixes` is exported;
+  both are extendable. No network I/O.
 
 ## v0.2.0-beta.2 (2026-06-08, beta)
 
