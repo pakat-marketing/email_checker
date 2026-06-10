@@ -40,11 +40,38 @@ var (
 // which a candidate is considered a plausible correction.
 const defaultThreshold = 2
 
+// Confidence is a coarse measure of how reliable a Suggestion is.
+// Higher is more reliable. The zero value, ConfidenceNone, means no
+// suggestion was made.
+type Confidence int
+
+const (
+	ConfidenceNone   Confidence = iota // no suggestion / unset
+	ConfidenceLow                      // component-level (SLD/TLD) reconstruction
+	ConfidenceMedium                   // whole-domain match at distance 2
+	ConfidenceHigh                     // whole-domain match at distance 1
+)
+
+// String returns the lowercase label ("none", "low", "medium", "high").
+func (c Confidence) String() string {
+	switch c {
+	case ConfidenceLow:
+		return "low"
+	case ConfidenceMedium:
+		return "medium"
+	case ConfidenceHigh:
+		return "high"
+	default:
+		return "none"
+	}
+}
+
 // Suggestion is a proposed correction for a misspelled email domain.
 type Suggestion struct {
-	Address string // local part, e.g. "kevin"
-	Domain  string // corrected domain, e.g. "gmail.com"
-	Full    string // corrected full email, e.g. "kevin@gmail.com"
+	Address    string     // local part, e.g. "kevin"
+	Domain     string     // corrected domain, e.g. "gmail.com"
+	Full       string     // corrected full email, e.g. "kevin@gmail.com"
+	Confidence Confidence // how reliable this suggestion is
 }
 
 // SuggestOptions configures a Suggester. The zero value is valid: nil slices
@@ -134,11 +161,15 @@ func (s *Suggester) Suggest(email string) (Suggestion, bool) {
 	}
 
 	// First try matching the whole domain.
-	if closest, found := findClosestDomain(parts.domain, s.domains, s.distance, s.domainThr); found {
+	if closest, dist, found := closestDomainWithin(parts.domain, s.domains, s.distance, s.domainThr); found {
 		if closest == parts.domain {
 			return Suggestion{}, false
 		}
-		return newSuggestion(parts.address, closest), true
+		conf := ConfidenceMedium
+		if dist <= 1 {
+			conf = ConfidenceHigh
+		}
+		return newSuggestion(parts.address, closest, conf), true
 	}
 
 	// Otherwise correct the second-level and top-level parts separately.
@@ -160,13 +191,13 @@ func (s *Suggester) Suggest(email string) (Suggestion, bool) {
 		changed = true
 	}
 	if changed {
-		return newSuggestion(parts.address, domain), true
+		return newSuggestion(parts.address, domain, ConfidenceLow), true
 	}
 	return Suggestion{}, false
 }
 
-func newSuggestion(address, domain string) Suggestion {
-	return Suggestion{Address: address, Domain: domain, Full: address + "@" + domain}
+func newSuggestion(address, domain string, conf Confidence) Suggestion {
+	return Suggestion{Address: address, Domain: domain, Full: address + "@" + domain, Confidence: conf}
 }
 
 // emailParts mirrors the structure mailcheck.js extracts from an address.

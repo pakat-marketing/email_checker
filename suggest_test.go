@@ -96,6 +96,25 @@ func TestSuggesterCustomDistance(t *testing.T) {
 	}
 }
 
+func TestSuggestConfidence(t *testing.T) {
+	cases := []struct {
+		email string
+		want  Confidence
+	}{
+		{"test@gmial.com", ConfidenceHigh},  // whole-domain distance 1
+		{"test@hotmial.com", ConfidenceLow}, // component (second-level) path
+	}
+	for _, tc := range cases {
+		got, ok := Suggest(tc.email)
+		if !ok {
+			t.Fatalf("Suggest(%q): expected a suggestion", tc.email)
+		}
+		if got.Confidence != tc.want {
+			t.Errorf("Suggest(%q).Confidence = %v, want %v", tc.email, got.Confidence, tc.want)
+		}
+	}
+}
+
 func TestDefaultListsNotMutated(t *testing.T) {
 	before := len(DefaultDomains)
 	s := NewSuggester(SuggestOptions{})

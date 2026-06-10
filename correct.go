@@ -77,5 +77,5 @@ func (s *Suggester) Correct(email string) (Suggestion, bool) {
 	}
 
 	// parts.address keeps the original local-part casing.
-	return newSuggestion(parts.address, closest), true
+	return newSuggestion(parts.address, closest, ConfidenceHigh), true
 }

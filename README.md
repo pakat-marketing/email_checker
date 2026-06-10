@@ -60,9 +60,10 @@ using a string-distance function.
 ```go
 // Default domain lists.
 if s, ok := emailchecker.Suggest("kevin@gmial.com"); ok {
-    fmt.Println(s.Full)    // "kevin@gmail.com"
-    fmt.Println(s.Address) // "kevin"
-    fmt.Println(s.Domain)  // "gmail.com"
+    fmt.Println(s.Full)       // "kevin@gmail.com"
+    fmt.Println(s.Address)    // "kevin"
+    fmt.Println(s.Domain)     // "gmail.com"
+    fmt.Println(s.Confidence) // "high", "medium", or "low"
 }
 
 // ok is false when the address is unparseable, already good, or has no
@@ -76,6 +77,18 @@ s := emailchecker.NewSuggester(emailchecker.SuggestOptions{
 })
 suggestion, ok := s.Suggest("kevin@mycompny.com") // -> kevin@mycompany.com
 ```
+
+The `Suggestion` struct also carries a `Confidence` field so callers can
+decide what to act on:
+
+| `Confidence` value | String     | When set                                                    |
+| ------------------ | ---------- | ----------------------------------------------------------- |
+| `ConfidenceHigh`   | `"high"`   | Whole-domain match, distance 1 (single-char typo).          |
+| `ConfidenceMedium` | `"medium"` | Whole-domain match, distance 2.                             |
+| `ConfidenceLow`    | `"low"`    | Component-level reconstruction (TLD or SLD swap/fix).       |
+
+`Confidence` is ordered so `ConfidenceHigh > ConfidenceMedium > ConfidenceLow`,
+allowing comparisons like `if s.Confidence >= emailchecker.ConfidenceMedium`.
 
 | Field                  | Default                     | Meaning                                       |
 | ---------------------- | --------------------------- | --------------------------------------------- |

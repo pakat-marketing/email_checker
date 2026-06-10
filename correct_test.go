@@ -53,6 +53,9 @@ func TestCorrect(t *testing.T) {
 			if ok && got.Full != tc.wantFull {
 				t.Errorf("Correct(%q).Full = %q, want %q", tc.email, got.Full, tc.wantFull)
 			}
+			if ok && got.Confidence != ConfidenceHigh {
+				t.Errorf("Correct(%q).Confidence = %v, want high", tc.email, got.Confidence)
+			}
 		})
 	}
 }

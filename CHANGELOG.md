@@ -1,3 +1,9 @@
+## Unreleased
+
+* Add a `Confidence` field (`high`/`medium`/`low`) to `Suggestion`, so
+  callers can tell a whole-domain off-by-one typo from a lower-confidence
+  component-level reconstruction. `Correct` results are always `high`.
+
 ## v0.2.0-beta.2 (2026-06-08, beta)
 
 * Fix `Correct` silently rewriting valid addresses on providers modeled via
