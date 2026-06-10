@@ -122,6 +122,39 @@ s := emailchecker.NewSuggester(emailchecker.SuggestOptions{
 c, ok := s.Correct("kevin@mycompny.com") // -> kevin@mycompany.com
 ```
 
+### Disposable & role-based detection
+
+Two offline, zero-network checks for common low-quality address classes.
+
+```go
+// Disposable / throwaway domain check.
+emailchecker.IsDisposable("user@mailinator.com")  // true
+emailchecker.IsDisposable("user@gmail.com")        // false
+
+// Bare-domain variant (useful when you already hold the domain):
+emailchecker.IsDisposableDomain("mailinator.com")  // true
+
+// Role / distribution address check (info@, support@, noreply@, …).
+emailchecker.IsRoleBased("info@example.com")    // true
+emailchecker.IsRoleBased("kevin@example.com")   // false
+```
+
+Both checks are case-insensitive and return `false` for unparseable input.
+
+The disposable-domain list is an offline starter set embedded from
+`disposable_domains.txt`. Drop a larger list (e.g. the community
+`disposable-email-domains` blocklist) into that file to extend it — the
+parser skips blank lines and `#` comments.
+
+`DefaultRolePrefixes` is exported so you can extend it at startup:
+
+```go
+emailchecker.DefaultRolePrefixes = append(emailchecker.DefaultRolePrefixes, "enquiries")
+```
+
+Note: `IsRoleBased` matches the **exact** local part (so `info@` matches but
+`info.team@` does not), which avoids false positives on real names.
+
 ### Configuration
 
 For non-default timeouts or retry counts, build a `Checker` and use its

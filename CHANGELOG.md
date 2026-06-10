@@ -1,3 +1,10 @@
+## Unreleased
+
+* Add `IsDisposable`/`IsDisposableDomain` and `IsRoleBased` for offline
+  filtering of throwaway and role/distribution addresses. The disposable list
+  is embedded (`disposable_domains.txt`) and `DefaultRolePrefixes` is exported;
+  both are extendable. No network I/O.
+
 ## v0.2.0-beta.2 (2026-06-08, beta)
 
 * Fix `Correct` silently rewriting valid addresses on providers modeled via
