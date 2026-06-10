@@ -25,6 +25,21 @@ The package has no module dependencies — only the Go standard library.
 
 ## Usage
 
+### One-call check
+
+`Check` is the batteries-included front door. It runs every check and returns
+a structured `Result`. It performs a DNS MX lookup (network I/O); use
+`NewChecker(Config{Timeout: …}).Check` to bound the timeout.
+
+```go
+r := emailchecker.Check("Kevin@gmial.com")
+// r.FormatOK, r.HasMX, r.Disposable, r.RoleBased
+// r.Correction != nil  -> safe high-confidence fix (r.Correction.Full)
+// r.Suggestion != nil  -> best-effort "did you mean" (check r.Suggestion.Confidence)
+```
+
+### Pipeline (lower-level)
+
 ```go
 import "github.com/pakat-marketing/email_checker"
 

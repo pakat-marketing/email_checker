@@ -19,12 +19,12 @@ package emailchecker
 
 import "time"
 
-// Check is a single validation step. It returns true when email passes the
-// step. A Check should be safe for concurrent use.
-type Check func(email string) bool
+// CheckFunc is a single validation step. It returns true when email passes
+// the step. A CheckFunc should be safe for concurrent use.
+type CheckFunc func(email string) bool
 
 // DefaultChecks is the pipeline used by Valid: format then MX.
-var DefaultChecks = []Check{Format, MX}
+var DefaultChecks = []CheckFunc{Format, MX}
 
 // Config controls the network-dependent checks (MX, SMTP).
 //
@@ -68,7 +68,7 @@ func Valid(email string) bool {
 
 // Validate runs each check against email, short-circuiting on the first
 // failure. A pipeline with no checks always returns true.
-func Validate(email string, checks ...Check) bool {
+func Validate(email string, checks ...CheckFunc) bool {
 	for _, c := range checks {
 		if !c(email) {
 			return false

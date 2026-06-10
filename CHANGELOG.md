@@ -7,6 +7,11 @@
   filtering of throwaway and role/distribution addresses. The disposable list
   is embedded (`disposable_domains.txt`) and `DefaultRolePrefixes` is exported;
   both are extendable. No network I/O.
+* Add `Check(email) Result` (and `(*Checker).Check`), a one-call front door
+  returning format, MX, disposable/role classification, and the best
+  suggestion + high-confidence correction in a single struct.
+* Rename `type Check` to `CheckFunc` (breaking, beta-only): `type Check` was
+  the pipeline step type; `Check` is now the one-call result function.
 
 ## v0.2.0-beta.2 (2026-06-08, beta)
 
